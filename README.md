@@ -5,4 +5,4 @@ It uses the HTML5 Canvas element to render a circle with a matching sine and cos
 This software is meant as an educational tool.
 
 
-![Screenshot depicting Horizontal Sine waves and Vertical Cosine Waves with a Cicle in the Center. The Circle contains a right triangle. There are also gridlines showing the radian markers with fractions of Π. ](https://github.com/spenjo7/sine_cosine_visualizer/edit/main/preview.png?raw=true)
+![Screenshot depicting Horizontal Sine waves and Vertical Cosine Waves with a Cicle in the Center. The Circle contains a right triangle. There are also gridlines showing the radian markers with fractions of Π. ](https://github.com/spenjo7/sine_cosine_visualizer/blob/main/preview.png)
