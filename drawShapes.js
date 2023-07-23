@@ -1,4 +1,58 @@
+//----------------////---- Calculations ----////----------------//
+
+const trigLookup = Array.from({ length: 360 }, ( _ , i ) =>{
+	const theta = i * Math.PI / 180 // multiply by degrees to get radians
+	const sin = Math.sin(theta)
+	const cos = Math.cos(theta)
+	return ({ sin, cos, degrees: i })
+})
+
+// console.info('Trig Lookup Tables loaded')
+
+const calcPaddedBoundries = ({centX, centY, radius, padding }) => {
+	const buffer = radius * padding
+
+	const rightX = centX + radius
+	const rightXb = centX + buffer
+	
+	const leftX = centX - radius
+	const leftXb = centX - buffer
+	
+	const topY = centY - radius
+	const topYb = centY - buffer
+	
+	const bottomY = centY + radius
+	const bottomYb = centY + buffer
+	
+	// probably don't need to return buffer, but why not // 
+	return {
+		buffer, 
+		rightX,			rightXb,
+		leftX,			leftXb,
+		topY,			topYb,
+		bottomY,			bottomYb
+	}
+}
+
+
 //----------------////---- DRAWING ----////----------------//
+
+const drawLine = (ctx, opts = {}) => {
+	const { 
+		originX, 
+		originY,
+		endX,
+		endY,
+		color
+	} = opts 
+
+	ctx.strokeStyle = color? color: "white"
+	ctx.beginPath()
+	ctx.moveTo(originX, originY)
+	ctx.lineTo(endX, endY)
+	ctx.stroke()
+}
+
 
 const drawGridLines = (ctx, opts = {}) => { // just the decorative background
 	const {width, height} = ctx.canvas
@@ -49,6 +103,44 @@ const drawCircle = (ctx, opts = {}) => {
 		ctx.fill()
 	}
 }
+
+const drawRadii = (ctx, opts = {}) => { // just the decorative background
+	const {width, height} = ctx.canvas
+			// Bring in optional values // 
+	const { radius, lineWidth, color, padding } = opts
+		
+
+	const pad = padding * radius // padding is a decimal multiplier 
+	const centX = width/2
+	const centY = height/2
+	const radians = radius * (Math.PI / 2)
+
+	const quadsX = Math.ceil((centX - pad) / ( radians )) 
+	const pointsX = Array.from({ length: quadsX }, (_, i) => radians * (i+1))
+	pointsX.forEach((x,i) => {
+		const xP = centX + pad + x
+		const xN = centX - pad - x	
+		const font = `${width/radius}px serif`
+		const txt =	 `${(i+1)/2}π`   
+
+		ctx.beginPath()
+		ctx.moveTo( xP, centY + radius )
+		ctx.lineTo( xP, centY - radius )
+		ctx.stroke()
+
+		ctx.font = font
+		ctx.fillText(txt, xP - (radius/2), i%2? centY + pad +20 : centY - pad)
+
+		ctx.beginPath()
+		ctx.moveTo( xN, centY + radius )
+		ctx.lineTo( xN, centY - radius )
+		ctx.stroke()
+
+		ctx.font = font
+		ctx.fillText(txt, xN - (radius/2), i%2? centY + pad +20 : centY - pad)
+	})
+}
+
 
 const drawTriangle = (ctx, opts ={}) => {  // hypetenus and fill
 	// Origin from center; based on ctx.canvas width/height  //
@@ -120,60 +212,8 @@ const drawBoundingSquare = ( ctx , linePoints, opts = {}) => {
 	ctx.stroke() // No Fill option; only Stroke
 }
 
-const drawWave = (ctx, amplitude, opts) => {
-	const z = Math.PI / 180 // multiply by degrees to get radians
-	const { 
-		originX, 	originY, 
-		phase, 	length, 
-		color, 	lineWidth, 
-		cosine,  rotate, reverse 
-	} = opts
 
-	ctx.beginPath() 
-	for(let i = 0; i < length; i++){
-		const  theta = (phase + i ) * z 
-
-		const sinCos = cosine? Math.cos(theta) : Math.sin(theta)
-			// need to be able to use either on both  axis 
-
-		if(!rotate){
-			ctx.lineTo(
-				reverse? originX -i : originX + i,
-				originY + (sinCos * amplitude)
-			)
-		}
-
-		if(rotate){
-			ctx.lineTo(
-				originX + (sinCos * amplitude),
-				reverse? originY -i : originY + i
-			)
-		}
-	}
-	// Set some styles //
-	ctx.strokeStyle = color? color: 'red'
-	ctx.lineWidth = lineWidth?? 1
-	ctx.stroke() 
-}
-
-
-const drawLine = (ctx, opts = {}) => {
-	const { 
-		originX, 
-		originY,
-		endX,
-		endY,
-		color
-	} = opts 
-
-	ctx.strokeStyle = color? color: "white"
-	ctx.beginPath()
-	ctx.moveTo(originX, originY)
-	ctx.lineTo(endX, endY)
-	ctx.stroke()
-
-}
-
+//----------------------------COMPLEX-----------------------//
 
 const drawMovingParts = (ctx, opts = {}) => { // hypetenus, and highlighting lines
 	const {width, height} = ctx.canvas
@@ -183,10 +223,11 @@ const drawMovingParts = (ctx, opts = {}) => { // hypetenus, and highlighting lin
 	const {phase, amplitude, color, lineWidth, fillStyle, padding } = opts
 
 	// Draw rotating line // phase = degrees for our angle
-	const theta = phase * (Math.PI/180) // theta = angle in radians
+	//const theta = phase * (Math.PI/180) // theta = angle in radians
+	const {theta, sin, cos } = trigLookup[phase % 360]
 	const rad = Math.PI * ( amplitude / 2 ) // length of hypotenus 
-	const X = Math.cos(theta) * rad
-	const Y = Math.sin(theta) * rad
+	const X = cos * rad
+	const Y = sin * rad
 	const originX  = centX + X
 	const originY = centY + Y
 
@@ -242,32 +283,41 @@ const drawMovingParts = (ctx, opts = {}) => { // hypetenus, and highlighting lin
 	})
 }
 
+const drawWave = (ctx, amplitude, opts) => {
+	// const z = Math.PI / 180 // multiply by degrees to get radians
+	const { 
+		originX, 	originY, 
+		phase, 	length, 
+		color, 	lineWidth, 
+		cosine,  rotate, reverse 
+	} = opts
 
-
-//----------------------------COMPLEX-----------------------//
-
-
-const calcPaddedBoundries = ({centX, centY, radius, padding }) => {
-	const buffer = radius * padding
-
-	const rightX = centX + radius
-	const rightXb = centX + buffer
+	ctx.beginPath()
 	
-	const leftX = centX - radius
-	const leftXb = centX - buffer
-	
-	const topY = centY - radius
-	const topYb = centY - buffer
-	
-	const bottomY = centY + radius
-	const bottomYb = centY + buffer
-	
-	// probably don't need to return buffer, but why not // 
-	return {
-		buffer, 
-		rightX,			rightXb,
-		leftX,			leftXb,
-		topY,			topYb,
-		bottomY,			bottomYb
-	}
+
+	const arr = Array.from({ length }, (_, i)=>{
+		const phaseN = phase + i
+		const { sin, cos } = trigLookup[ phaseN % 360 ]
+		const sinCos = cosine? cos : sin // depends on which you need
+		
+		if(!rotate){
+			ctx.lineTo(
+				reverse? originX -i : originX +i,
+				originY + (sinCos * amplitude)
+			)
+		}
+
+		if(rotate){
+			ctx.lineTo(
+				originX + (sinCos * amplitude),
+				reverse? originY -i : originY + i
+			)
+		}
+	})
+
+	// Set some styles //
+	ctx.strokeStyle = color? color: 'red'
+	ctx.lineWidth = lineWidth?? 1
+	ctx.stroke()
+	return arr 
 }

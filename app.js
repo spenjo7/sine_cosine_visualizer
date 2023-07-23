@@ -1,8 +1,4 @@
-
-
-
-	
-//----------------////---- COMPLEX ----////----------------//
+///----------------////---- COMPLEX ----////----------------//
 const animateWaves = (ctx, {
 		radius, 
 		phase, 
@@ -28,32 +24,31 @@ const animateWaves = (ctx, {
 
 	ctx.lineWidth = 3 
 
-		// Left ( Sin ) // 
-	drawWave(ctx, radius, { 
-		originX: leftXb, 
-		originY: centY, 
-		phase,
-		length,
-		color,
-		reverse: true
-	})
-		
 		// Right ( Sin ) //
 	drawWave(ctx, radius, {
 		originX: rightXb, 
 		originY: centY,
 		phase,
-		length,
+		length: rightXb,
 		color,
 	})
 
+		// Left ( Sin ) // 
+	drawWave(ctx, radius, { 
+		originX: leftXb, 
+		originY: centY, 
+		phase,
+		length: rightXb,
+		color,
+		reverse: true
+	})
 	
 		// Top Cos //
 	drawWave(ctx, radius, { 
 		originX: centX, 
 		originY: topYb, 
 		phase,
-		length,
+		length:topYb,
 		color, 
 		rotate: true,
 		cosine: true,
@@ -65,11 +60,12 @@ const animateWaves = (ctx, {
 		originX: centX, 
 		originY: bottomYb, 
 		phase,
-		length,
+		length: topYb,
 		color, 
 		rotate: true,
 		cosine: true
 	})	
+	
 }
  
 const animate = (ctx, {amplitude, frequency, phase, color, color2 }) => {
@@ -82,7 +78,9 @@ const animate = (ctx, {amplitude, frequency, phase, color, color2 }) => {
 
 	// reset and static elements //
 	ctx.clearRect(0, 0, width, height)
-	drawGridLines(ctx, { color })
+	drawGridLines(ctx, { color, radius })
+	drawRadii(ctx, {color, radius, padding })
+
 	drawCircle(ctx, { centX, centY, radius, color })
 	const paddedBounds = calcPaddedBoundries({
 		centX,
@@ -91,6 +89,7 @@ const animate = (ctx, {amplitude, frequency, phase, color, color2 }) => {
 		padding
 	})
 
+	const {rightXb, topYb } = paddedBounds
 	drawBoundingSquare(ctx, paddedBounds, { color })
 
 		// Draw the hypotenuse and it's guidelines
@@ -106,19 +105,18 @@ const animate = (ctx, {amplitude, frequency, phase, color, color2 }) => {
 		radius,
 		phase,
 		color: color2,
-		padding,
-		length: width
+		padding
 	})
 
 	ctx.beginPath()
 	ctx.fillStyle = color;
-	ctx.font = "36px serif";
-	ctx.fillText("Sine Wave", width * 0.05, height * 0.55)
+	ctx.font = `${width/25}px serif`
+	ctx.fillText("Sine Wave", width * 0.05, height * 0.75)
 	ctx.fillText("Cosine Wave", width * 0.60, height * 0.10)
 
  
-	ctx.font = "24px serif";
-	ctx.fillText("(horizontal)", width * 0.07, height * 0.60)
+	ctx.font = `${width/35}px serif`
+	ctx.fillText("(horizontal)", width * 0.07, height * 0.80)
 	ctx.fillText("(vertical)", width * 0.65, height * 0.15)
 
 }
@@ -127,7 +125,6 @@ const app = new Vue({
     el: "#app"
     ,data(){
 		const msg = 'Vue.JS is working!'
- 
 		const amplitude = 50
 		return({
 			msg,
@@ -138,7 +135,8 @@ const app = new Vue({
 			color: localStorage.getItem("lineColor")?? '#574747',
 			color2: localStorage.getItem("waveColor")?? '#000000',
 			isPaused: true,
-			lastTime: 0
+			lastTime: 0,
+			speed: 1
 		})
     },
 	 methods:{
@@ -150,8 +148,10 @@ const app = new Vue({
 		onResize(){
 			if(!this.canvas) return null
 			const {width, height} = this.canvas.getBoundingClientRect()
+			
 			this.ctx.canvas.width  = width
 			this.ctx.canvas.height = height
+			this.amplitude = (width < height)? width * 0.05: height * 0.05
 			this.animate()
 		},
 		animate(){
@@ -190,7 +190,6 @@ const app = new Vue({
 				></input>
 				{{ color }}
 			</label>
-
 			<label>
 				Secondary Color: 
 				<input 
@@ -200,7 +199,15 @@ const app = new Vue({
 				></input>
 				{{ color2 }}
 			</label>
-
+			<label>
+				Speed: (x{{ speed }})
+				<input 
+					type="range" 
+					min="1" 
+					max="20"
+					v-model="speed"
+				>
+			</label>
 		</div>
 	 </section>`
     ,mounted(){
@@ -212,13 +219,13 @@ const app = new Vue({
 			const delta = time - this.lastTime
 			if(!this.isPaused && delta > 60 ){
 				this.lastTime = time
-				this.phase++
+				let p = (this.phase + parseInt(this.speed)) % 360
+				this.phase++ 
+					// reset after 360 otherwise we get absurdly large calculations
 				this.animate()
 			}			
 			window.requestAnimationFrame(step)
 		}
-
-		window.requestAnimationFrame(step)
-		 
+		step(0)
 	}
 })
