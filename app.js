@@ -220,7 +220,7 @@ const app = new Vue({
 			if(!this.isPaused && delta > 60 ){
 				this.lastTime = time
 				let p = (this.phase + parseInt(this.speed)) % 360
-				this.phase++ 
+				this.phase = p  
 					// reset after 360 otherwise we get absurdly large calculations
 				this.animate()
 			}			
